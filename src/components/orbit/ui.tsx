@@ -367,7 +367,18 @@ export function Chips({ chips, defaultChip, value, onChange, label }: ChipsProps
 
 // A Googie starburst holding the streak count.
 // compact: on small screens the "day streak" words are kept for screen readers only.
-export function StreakBadge({ days, size = 64, compact = false }: { days: number; size?: number; compact?: boolean }) {
+// `lit` glows the starburst like a lamp, for a goal met today.
+export function StreakBadge({
+  days,
+  size = 64,
+  compact = false,
+  lit = false,
+}: {
+  days: number;
+  size?: number;
+  compact?: boolean;
+  lit?: boolean;
+}) {
   const points = Array.from({ length: 16 }, (_, i) => {
     const r = i % 2 ? 30 : 48;
     const a = (Math.PI / 8) * i;
@@ -376,7 +387,11 @@ export function StreakBadge({ days, size = 64, compact = false }: { days: number
   return (
     <span className="inline-flex items-center gap-2">
       <span className="relative grid place-items-center" style={{ width: size, height: size }}>
-        <svg viewBox="0 0 100 100" className="absolute inset-0" aria-hidden>
+        <svg
+          viewBox="0 0 100 100"
+          className={cx("absolute inset-0 overflow-visible transition-[filter]", lit && "drop-shadow-[0_0_8px_#e8a33d]")}
+          aria-hidden
+        >
           <polygon points={points} fill={orbit.mustard} />
         </svg>
         <span className="relative font-(family-name:--font-display) text-lg text-[#1c2a4a]">{days}</span>

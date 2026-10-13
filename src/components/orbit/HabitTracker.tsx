@@ -219,7 +219,8 @@ export function HabitTracker() {
         )}
       </Modal>
 
-      <div role="status" className="pointer-events-none fixed inset-x-0 bottom-6 z-10 flex justify-center px-5">
+      {/* Top of the screen on mobile, so it never covers a card; bottom on wider screens. */}
+      <div role="status" className="pointer-events-none fixed inset-x-0 top-4 z-10 flex justify-center px-5 sm:top-auto sm:bottom-6">
         {toast && (
           <ConsoleScreen className="!rounded-full !p-1.5 shadow-[0_8px_24px_rgba(28,42,74,0.25)]">
             <span className="flex items-center gap-2.5 text-sm">
@@ -267,10 +268,9 @@ function Summary({ todayLog, goals, met }: { todayLog: Today; goals: Goals; met:
   else line = `Still to go: ${list(left.map((h) => h.name.toLowerCase()))}.`;
 
   return (
-    <section aria-label="Today's progress" className="grid items-center gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:gap-14">
+    <section aria-label="Today's progress" className="grid items-center gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)] lg:gap-10">
       <div>
-        <p className={cx(label, "text-(--muted)")}>{today.long}</p>
-        <h1 className={cx(display, "mt-3 text-4xl leading-tight sm:text-5xl")}>
+        <h1 className={cx(display, "text-4xl leading-tight sm:text-5xl xl:whitespace-nowrap")}>
           {done.length} of {habits.length} goals met
         </h1>
         <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -315,9 +315,15 @@ function HabitCard({
             {habit.name}
           </h2>
           <p className={cx(label, "mt-1 text-(--muted)")}>{goal ? `Goal · ${goal} ${unit}` : "Goal · once a day"}</p>
+          {met && (
+            <p className={cx(label, "mt-1.5 flex items-center gap-2 font-bold whitespace-nowrap")}>
+              <span aria-hidden className="size-2 rounded-full bg-[#e8a33d] shadow-[0_0_8px_#e8a33d]" />
+              Goal met
+            </p>
+          )}
         </div>
-        <div className="flex items-center gap-3">
-          <StreakBadge days={streak} size={52} compact />
+        <div className="flex shrink-0 items-center gap-3">
+          <StreakBadge days={streak} size={52} compact lit={met} />
           <ChromeButton label={`${habit.name} details and goal`} onClick={onDetails} aria-haspopup="dialog">
             <svg viewBox="0 0 8 12" className="w-2" aria-hidden>
               <path d="M1.5 1.5L6 6l-4.5 4.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />

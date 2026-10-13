@@ -374,4 +374,218 @@ const zineTiles: Record<string, () => React.ReactNode> = {
   ),
 };
 
-export const tiles: Record<string, () => React.ReactNode> = { ...orbitTiles, ...zineTiles };
+// Glass: frosted panes over blurred violet, blue, and orange light.
+
+const glass = {
+  orange: "#ff8a3d",
+  violet: "#a98bff",
+  violetDeep: "#6a3df0",
+  blue: "#5cc8ff",
+  blueDeep: "#2a6bf0",
+  night: "#120c2a",
+  ink: "#1a1033",
+};
+
+const glassSpectrum = `linear-gradient(90deg, ${glass.blue}, ${glass.violet} 50%, ${glass.orange})`;
+const glassPane =
+  "border border-white/15 bg-white/8 shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_12px_40px_rgba(8,4,28,0.45)] backdrop-blur-xl";
+
+// The dusk sky each glass tile sits on: three blurred blobs of light.
+function Sky({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ backgroundColor: glass.night }} className="relative h-full overflow-hidden text-[#f5f2ff]">
+      <span style={{ backgroundColor: glass.violet }} className="absolute -top-8 -left-6 size-36 rounded-full opacity-70 blur-2xl" />
+      <span style={{ backgroundColor: glass.orange }} className="absolute -right-6 -bottom-10 size-40 rounded-full opacity-60 blur-2xl" />
+      <span style={{ backgroundColor: glass.blue }} className="absolute top-6 right-10 size-24 rounded-full opacity-50 blur-2xl" />
+      <div className="relative h-full">{children}</div>
+    </div>
+  );
+}
+
+function GlassFace({ curve, tint, size = 40 }: { curve: number; tint: string; size?: number }) {
+  return (
+    <span
+      style={{
+        width: size,
+        height: size,
+        backgroundImage: `radial-gradient(circle at 32% 28%, rgba(255,255,255,0.85), ${tint} 45%, ${tint}99 100%)`,
+      }}
+      className="grid place-items-center rounded-full border border-white/40"
+    >
+      <svg viewBox="0 0 40 40" width={size * 0.62}>
+        <g fill="none" stroke={glass.ink} strokeWidth="2.6" strokeLinecap="round">
+          <circle cx="14" cy="16" r="1.2" fill={glass.ink} />
+          <circle cx="26" cy="16" r="1.2" fill={glass.ink} />
+          <path d={`M12 ${26 - curve / 3} Q 20 ${26 + curve}, 28 ${26 - curve / 3}`} />
+        </g>
+      </svg>
+    </span>
+  );
+}
+
+const glassTiles: Record<string, () => React.ReactNode> = {
+  "glass/headline": () => (
+    <Sky>
+      <div className="flex h-full flex-col justify-between p-6">
+        <Label>display · outfit · light</Label>
+        <p className="font-(family-name:--font-display) text-5xl leading-none font-extralight tracking-tight">
+          Good
+          <br />
+          morning
+        </p>
+        <p className="font-(family-name:--font-body) text-sm text-[#b7acdc]">Body in DM Sans 400, 16px, for everything you read.</p>
+      </div>
+    </Sky>
+  ),
+
+  "glass/labels": () => (
+    <Sky>
+      <div className="flex h-full items-center p-5">
+        <div className={`${glassPane} flex w-full flex-col gap-2.5 rounded-[1.5rem] p-5`}>
+          {[
+            ["water", "5 of 8"],
+            ["streak", "21 days"],
+            ["timer", "12:04"],
+            ["status", "goal met"],
+          ].map(([k, v]) => (
+            <div key={k} className="flex justify-between border-b border-white/10 pb-2 last:border-0 last:pb-0">
+              <Label>{k}</Label>
+              <Label>{v}</Label>
+            </div>
+          ))}
+        </div>
+      </div>
+    </Sky>
+  ),
+
+  "glass/palette": () => (
+    <div style={{ backgroundColor: glass.night }} className="grid h-full grid-cols-3 gap-3 p-6 text-[#f5f2ff]">
+      {[
+        ["background", "#120c2a"],
+        ["surface", "#241a4d"],
+        ["border", "#5a4d94"],
+        ["text", "#f5f2ff"],
+        ["muted", "#b7acdc"],
+        ["accent", "#ff8a3d"],
+      ].map(([name, hex]) => (
+        <div key={name} className="flex flex-col gap-1">
+          <div style={{ backgroundColor: hex }} className="flex-1 rounded-2xl border border-white/20" />
+          {/* Tighter than Label, so "background" fits under its swatch. */}
+          <span className="font-(family-name:--font-label) text-[10px] uppercase">{name}</span>
+        </div>
+      ))}
+    </div>
+  ),
+
+  "glass/spectrum": () => (
+    <Sky>
+      <div className="flex h-full flex-col justify-center gap-5 p-6">
+        <div className="flex justify-center gap-5">
+          {[
+            ["blue", glass.blue],
+            ["violet", glass.violet],
+            ["orange", glass.orange],
+          ].map(([name, hex]) => (
+            <div key={name} className="flex flex-col items-center gap-2">
+              <span
+                style={{ backgroundImage: `radial-gradient(circle at 32% 28%, #fff, ${hex} 50%)` }}
+                className="size-14 rounded-full border border-white/40"
+              />
+              <Label>{name}</Label>
+            </div>
+          ))}
+        </div>
+        <div style={{ backgroundImage: glassSpectrum }} className="h-3 rounded-full shadow-[0_0_16px_rgba(255,138,61,0.5)]" />
+      </div>
+    </Sky>
+  ),
+
+  // The anatomy of a pane, with its four ingredients called out.
+  "glass/pane": () => (
+    <Sky>
+      <div className="flex h-full items-center justify-center p-6">
+        <div className={`${glassPane} relative w-full rounded-[1.75rem] p-5`}>
+          <Label>reading · mind</Label>
+          <p className="mt-1 font-(family-name:--font-display) text-2xl font-light">12 / 20 pages</p>
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {["white 8%", "blur 24", "top edge", "28px"].map((t) => (
+              <span key={t} className="rounded-full border border-white/20 bg-white/10 px-2 py-0.5 font-(family-name:--font-label) text-[10px]">
+                {t}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </Sky>
+  ),
+
+  "glass/buttons": () => (
+    <Sky>
+      <div className="flex h-full flex-col items-center justify-center gap-4 p-6">
+        <span className="rounded-full border border-white/40 bg-[linear-gradient(180deg,#ffa865,#ff8a3d)] px-8 py-3 font-(family-name:--font-body) font-semibold text-[#1a1033] shadow-[inset_0_1px_0_rgba(255,255,255,0.6),0_0_28px_rgba(255,138,61,0.6)]">
+          Log
+        </span>
+        <span className={`${glassPane} rounded-full px-8 py-3 font-(family-name:--font-body) font-semibold`}>Undo</span>
+      </div>
+    </Sky>
+  ),
+
+  // 25 of 30 minutes: the ring is most of the way round and turning orange.
+  "glass/progress": () => {
+    const t = 25 / 30;
+    const ring = "radial-gradient(farthest-side, transparent calc(100% - 12px), #000 calc(100% - 11px))";
+    return (
+      <Sky>
+        <div className="flex h-full items-center justify-center gap-6 p-6">
+          <div className="relative grid size-32 place-items-center">
+            <div className="absolute inset-0 overflow-hidden rounded-full" style={{ mask: ring, WebkitMask: ring }}>
+              <div className="absolute inset-0 bg-white/10" />
+              <div
+                className="absolute inset-0"
+                style={{
+                  backgroundImage: `conic-gradient(${glass.blue}, ${glass.violet} 50%, ${glass.orange})`,
+                  mask: `conic-gradient(#000 ${t * 360}deg, transparent 0)`,
+                  WebkitMask: `conic-gradient(#000 ${t * 360}deg, transparent 0)`,
+                }}
+              />
+            </div>
+            <p className="relative font-(family-name:--font-display) text-3xl font-light">25</p>
+          </div>
+          <div className="flex flex-col gap-1">
+            <Label>exercise</Label>
+            <Label>of 30 min</Label>
+          </div>
+        </div>
+      </Sky>
+    );
+  },
+
+  // Five bubbles from rough to great; "good" is today's, lifted and ringed.
+  "glass/mood": () => (
+    <Sky>
+      <div className="flex h-full flex-col items-center justify-center gap-4 p-4">
+        <div className="flex items-center gap-2">
+          {(
+            [
+              [-6, glass.blueDeep],
+              [-3, glass.blue],
+              [0, glass.violet],
+              [3, "#ff9a7a"],
+              [6, glass.orange],
+            ] as const
+          ).map(([curve, tint], i) => (
+            <span
+              key={i}
+              className={i === 3 ? "scale-125 rounded-full ring-2 ring-white/80 ring-offset-2 ring-offset-transparent" : "opacity-60"}
+            >
+              <GlassFace curve={curve} tint={tint} />
+            </span>
+          ))}
+        </div>
+        <p className="font-(family-name:--font-body) text-lg">Good today</p>
+      </div>
+    </Sky>
+  ),
+};
+
+export const tiles: Record<string, () => React.ReactNode> = { ...orbitTiles, ...zineTiles, ...glassTiles };

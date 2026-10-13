@@ -3,8 +3,8 @@
 // Orbit's habit-tracker pieces: the console screen, and one way to log
 // and see each habit. These are what the site is built from.
 
-import { useEffect, useState } from "react";
-import { GoalBadge, Key, StreakBadge } from "./ui";
+import { useEffect, useEffectEvent, useState } from "react";
+import { GoalBadge, Key, StreakBadge, useControlled } from "./ui";
 import { orbit, type ForcedState } from "./tokens";
 
 function cx(...classes: (string | false | undefined)[]) {
@@ -25,7 +25,7 @@ export function ConsoleScreen({ children, className }: { children: React.ReactNo
           color: orbit.phosphor,
           backgroundImage: "repeating-linear-gradient(0deg, rgba(255,255,255,0.03) 0 1px, transparent 1px 3px)",
         }}
-        className="rounded-[2rem/2.5rem] px-6 py-5 font-(family-name:--font-label) shadow-[inset_0_0_24px_rgba(0,0,0,0.6)]"
+        className="rounded-[2rem/2.5rem] px-4 py-5 sm:px-6 font-(family-name:--font-label) shadow-[inset_0_0_24px_rgba(0,0,0,0.6)]"
       >
         {children}
       </div>
@@ -46,23 +46,38 @@ function Cells({ value, total, cells = 10 }: { value: number; total: number; cel
 }
 
 // Today's summary, as the screen at the top of the site.
-export function TodayConsole() {
-  const rows: [string, number, number, string][] = [
-    ["Water", 5, 8, "5/8 gl"],
-    ["Read", 20, 20, "20/20 pp"],
-    ["Exercise", 25, 30, "25/30 min"],
-    ["Mood", 4, 5, "good"],
-  ];
+// Each row: name, value, goal, readout text.
+export type ConsoleRow = [string, number, number, string];
+
+const demoRows: ConsoleRow[] = [
+  ["Water", 5, 8, "5/8 gl"],
+  ["Read", 20, 20, "20/20 pp"],
+  ["Exercise", 25, 30, "25/30 min"],
+  ["Mood", 4, 5, "good"],
+];
+
+export function TodayConsole({
+  rows = demoRows,
+  date = "Fri · Oct 10",
+  title = "Day 21",
+}: {
+  rows?: ConsoleRow[];
+  date?: string;
+  title?: string;
+}) {
+  const met = rows.filter(([, v, t]) => v >= t).length;
   return (
     <ConsoleScreen>
       <div className="flex items-baseline justify-between">
-        <span className={cx(label, "text-[#5f8f7c]")}>Fri · Oct 10</span>
-        <span className={label}>2 of 4 goals</span>
+        <span className={cx(label, "text-[#5f8f7c]")}>{date}</span>
+        <span className={label}>
+          {met} of {rows.length} goals
+        </span>
       </div>
-      <p className="mt-2 font-(family-name:--font-display) text-2xl tracking-wide text-[#f3ead8] uppercase">Day 21</p>
+      <p className="mt-2 font-(family-name:--font-display) text-2xl tracking-wide text-[#f3ead8] uppercase">{title}</p>
       <div className="mt-3 flex flex-col gap-2">
         {rows.map(([name, v, t, text]) => (
-          <div key={name} className="grid grid-cols-[5.5rem_1fr_auto] items-center gap-3">
+          <div key={name} className="grid grid-cols-[4.75rem_1fr_auto] items-center gap-2 sm:grid-cols-[5.5rem_1fr_auto] sm:gap-3">
             <span className={label}>{name}</span>
             <Cells value={v} total={t} />
             <span className={cx(label, v >= t ? "text-[#e8a33d]" : "")}>{text}</span>
@@ -110,13 +125,15 @@ export function FuelCell({
   );
 }
 
-export function WaterCells({ goal = 8, initial = 5 }: { goal?: number; initial?: number }) {
-  const [count, setCount] = useState(initial);
+type Controlled<T> = { value?: T; onChange?: (value: T) => void };
+
+export function WaterCells({ goal = 8, initial = 5, value, onChange }: { goal?: number; initial?: number } & Controlled<number>) {
+  const [count, setCount] = useControlled(value, onChange, initial);
   const [hover, setHover] = useState<number | null>(null);
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex gap-2" onMouseLeave={() => setHover(null)}>
+      <div className="flex flex-wrap gap-2" onMouseLeave={() => setHover(null)}>
         {Array.from({ length: goal }, (_, i) => {
           const full = i < count;
           const look: CellLook = full ? "full" : hover !== null && i <= hover ? "preview" : "empty";
@@ -169,9 +186,9 @@ export function OrbitTrack({ value, total, size = 200 }: { value: number; total:
   );
 }
 
-export function PageStepper({ goal = 20, initial = 12 }: { goal?: number; initial?: number }) {
-  const [pages, setPages] = useState(initial);
-  const add = (n: number) => setPages((p) => Math.max(0, p + n));
+export function PageStepper({ goal = 20, initial = 12, value, onChange }: { goal?: number; initial?: number } & Controlled<number>) {
+  const [pages, setPages] = useControlled(value, onChange, initial);
+  const add = (n: number) => setPages(Math.max(0, pages + n));
   return (
     <div className="flex flex-col items-start gap-3">
       <OrbitTrack value={pages} total={goal} />
@@ -201,27 +218,32 @@ export function PageStepper({ goal = 20, initial = 12 }: { goal?: number; initia
 // ---------------------------------------------------------------------------
 // Exercise: a gauge with a needle, 0 to the goal in minutes, and a timer.
 
-export function ExerciseDial({ goal = 30, initial = 25 }: { goal?: number; initial?: number }) {
-  const [minutes, setMinutes] = useState(initial);
+export function ExerciseDial({ goal = 30, initial = 25, value, onChange }: { goal?: number; initial?: number } & Controlled<number>) {
+  const [minutes, setMinutes] = useControlled(value, onChange, initial);
   const [running, setRunning] = useState(false);
+  // Seconds into this timer session. Each full minute is added to the total as it passes.
   const [seconds, setSeconds] = useState(0);
+
+  const tick = useEffectEvent(() => {
+    const next = seconds + 1;
+    setSeconds(next);
+    if (next % 60 === 0) setMinutes(minutes + 1);
+  });
 
   useEffect(() => {
     if (!running) return;
-    const id = setInterval(() => setSeconds((s) => s + 1), 1000);
+    const id = setInterval(() => tick(), 1000);
     return () => clearInterval(id);
   }, [running]);
 
-  const total = minutes + Math.floor(seconds / 60);
+  const total = minutes;
   const t = Math.min(total / goal, 1);
   const needle = -90 + t * 180;
-  const ticks = Array.from({ length: goal / 5 + 1 }, (_, i) => i * 5);
+  const step = goal <= 30 ? 5 : 15;
+  const ticks = Array.from({ length: Math.floor(goal / step) + 1 }, (_, i) => i * step);
 
   function toggleTimer() {
-    if (running) {
-      setMinutes(total);
-      setSeconds(0);
-    }
+    if (running) setSeconds(0);
     setRunning(!running);
   }
 
@@ -283,10 +305,10 @@ export function ExerciseDial({ goal = 30, initial = 25 }: { goal?: number; initi
         {total >= goal && <GoalBadge />}
       </div>
       <div className="flex gap-2">
-        <Key variant="secondary" lamp={false} onClick={() => setMinutes((m) => m + 5)}>
+        <Key variant="secondary" lamp={false} onClick={() => setMinutes(minutes + 5)}>
           +5
         </Key>
-        <Key variant="secondary" lamp={false} onClick={() => setMinutes((m) => m + 15)}>
+        <Key variant="secondary" lamp={false} onClick={() => setMinutes(minutes + 15)}>
           +15
         </Key>
         <Key selected={running} onClick={toggleTimer}>
@@ -328,8 +350,10 @@ function Moon({ phase, size = 40 }: { phase: number; size?: number }) {
   );
 }
 
-export function MoodPhases({ initial = 3 }: { initial?: number | null }) {
-  const [mood, setMood] = useState<number | null>(initial);
+export const moodNames = moods;
+
+export function MoodPhases({ initial = 3, value, onChange }: { initial?: number | null } & Controlled<number | null>) {
+  const [mood, setMood] = useControlled<number | null>(value, onChange, initial);
 
   function onKeyDown(e: React.KeyboardEvent) {
     if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
@@ -341,7 +365,7 @@ export function MoodPhases({ initial = 3 }: { initial?: number | null }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <div role="radiogroup" aria-label="Today's mood" className="flex gap-1" onKeyDown={onKeyDown}>
+      <div role="radiogroup" aria-label="Today's mood" className="grid max-w-sm grid-cols-5 gap-1" onKeyDown={onKeyDown}>
         {moods.map((m, i) => (
           <button
             key={m}
@@ -350,11 +374,11 @@ export function MoodPhases({ initial = 3 }: { initial?: number | null }) {
             aria-checked={mood === i}
             tabIndex={mood === i || (mood === null && i === 0) ? 0 : -1}
             onClick={() => setMood(i)}
-            className="group flex flex-col items-center gap-1.5 rounded-2xl px-1.5 py-2 hover:bg-[#efe4cf] focus-visible:outline-3 focus-visible:outline-[#1f6f78]"
+            className="group flex min-w-0 flex-col items-center gap-1.5 rounded-2xl py-2 hover:bg-[#efe4cf] focus-visible:outline-3 focus-visible:outline-[#1f6f78]"
           >
             <span
               className={cx(
-                "grid size-14 place-items-center rounded-full border-2",
+                "grid size-12 place-items-center rounded-full border-2 sm:size-14",
                 mood === i ? "border-[#1f6f78]" : "border-transparent",
               )}
             >
@@ -372,7 +396,7 @@ export function MoodPhases({ initial = 3 }: { initial?: number | null }) {
 // Streaks: the mission log. A row of portholes per habit for the week;
 // lit when the goal was met, dark when missed, dashed for today.
 
-type Day = "met" | "missed" | "today";
+export type Day = "met" | "missed" | "today";
 
 export function Porthole({ day }: { day: Day }) {
   return (
@@ -387,23 +411,31 @@ export function Porthole({ day }: { day: Day }) {
   );
 }
 
-const log: [string, Day[], number][] = [
+export type LogRow = [string, Day[], number];
+
+const demoLog: LogRow[] = [
   ["Water", ["met", "met", "met", "met", "met", "met", "today"], 21],
   ["Read", ["met", "missed", "met", "met", "met", "met", "met"], 5],
   ["Exercise", ["missed", "met", "met", "missed", "met", "met", "today"], 2],
   ["Mood", ["met", "met", "met", "met", "met", "met", "met"], 30],
 ];
 
-export function MissionLog() {
+export function MissionLog({
+  log = demoLog,
+  days = ["M", "T", "W", "T", "F", "S", "S"],
+}: {
+  log?: LogRow[];
+  days?: string[];
+}) {
   return (
     <ConsoleScreen>
       <div className="flex items-baseline justify-between">
         <span className={label}>Mission log</span>
         <span className={cx(label, "text-[#5f8f7c]")}>this week</span>
       </div>
-      <div className="mt-3 grid grid-cols-[5.5rem_repeat(7,1.25rem)_auto] items-center gap-x-2 gap-y-2.5">
+      <div className="mt-3 grid grid-cols-[4.75rem_repeat(7,1.25rem)_auto] items-center gap-x-1 gap-y-2.5 sm:grid-cols-[5.5rem_repeat(7,1.25rem)_auto] sm:gap-x-2">
         <span />
-        {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
+        {days.map((d, i) => (
           <span key={i} className={cx(label, "text-center text-[#5f8f7c]")}>
             {d}
           </span>

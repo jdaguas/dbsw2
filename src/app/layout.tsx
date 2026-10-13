@@ -3,11 +3,14 @@ import {
   Abril_Fatface,
   Anton,
   Courier_Prime,
+  DM_Mono,
+  DM_Sans,
   Geist,
   Geist_Mono,
   Jost,
   Londrina_Solid,
   Michroma,
+  Outfit,
   Permanent_Marker,
   Reenie_Beanie,
   Space_Mono,
@@ -87,6 +90,23 @@ const specialElite = Special_Elite({
   weight: "400",
 });
 
+// Glass style
+const outfit = Outfit({
+  variable: "--font-outfit",
+  subsets: ["latin"],
+});
+
+const dmSans = DM_Sans({
+  variable: "--font-dm-sans",
+  subsets: ["latin"],
+});
+
+const dmMono = DM_Mono({
+  variable: "--font-dm-mono",
+  subsets: ["latin"],
+  weight: ["400", "500"],
+});
+
 export const metadata: Metadata = {
   title: "UI/UX & Visual Design",
   description: "Mood boards, design systems, and a site — Design, Build, Ship Assignment 2",
@@ -96,7 +116,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${michroma.variable} ${jost.variable} ${spaceMono.variable} ${londrina.variable} ${abril.variable} ${anton.variable} ${marker.variable} ${courier.variable} ${reenie.variable} ${specialElite.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${michroma.variable} ${jost.variable} ${spaceMono.variable} ${londrina.variable} ${abril.variable} ${anton.variable} ${marker.variable} ${courier.variable} ${reenie.variable} ${specialElite.variable} ${outfit.variable} ${dmSans.variable} ${dmMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>

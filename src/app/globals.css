@@ -14,3 +14,15 @@ body {
 .paper-texture {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.35 0 0 0 0 0.3 0 0 0 0 0.2 0 0 0 0.12 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
+
+/* Dusk sky for the Glass style: violet, blue, and orange light on deep indigo.
+   Fixed, so every frosted pane looks onto the same sky as you scroll. */
+.glass-backdrop {
+  background-color: #120c2a;
+  background-image:
+    radial-gradient(42rem 34rem at 6% 4%, rgba(169, 139, 255, 0.5), transparent 70%),
+    radial-gradient(38rem 30rem at 96% 14%, rgba(92, 200, 255, 0.36), transparent 70%),
+    radial-gradient(46rem 36rem at 82% 100%, rgba(255, 138, 61, 0.42), transparent 70%),
+    radial-gradient(32rem 28rem at 18% 92%, rgba(106, 61, 240, 0.4), transparent 70%);
+  background-attachment: fixed;
+}

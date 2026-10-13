@@ -10,6 +10,18 @@ function cx(...classes: (string | false | undefined)[]) {
   return classes.filter(Boolean).join(" ");
 }
 
+// State that a parent can own (pass value and onChange), or that the control
+// keeps for itself (the design system's demos).
+export function useControlled<T>(value: T | undefined, onChange: ((v: T) => void) | undefined, initial: T) {
+  const [inner, setInner] = useState(initial);
+  const controlled = value !== undefined;
+  function set(v: T) {
+    if (!controlled) setInner(v);
+    onChange?.(v);
+  }
+  return [controlled ? value : inner, set] as const;
+}
+
 const focusRing = "focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-[#1f6f78]";
 const forcedFocusRing = "outline-3 outline-offset-3 outline-[#1f6f78]";
 
@@ -96,15 +108,31 @@ export function Key({
 // ---------------------------------------------------------------------------
 // Link
 
-export function TextLink({ children, href = "#" }: { children: React.ReactNode; href?: string }) {
+const linkLook = cx(
+  "rounded-sm font-medium text-[#1f6f78] underline decoration-2 underline-offset-4 hover:decoration-[#e8a33d] active:text-[#1c2a4a]",
+  focusRing,
+);
+
+// A link; with onClick it's a button that looks like one (for in-page actions).
+export function TextLink({
+  children,
+  href = "#",
+  onClick,
+  ...rest
+}: {
+  children: React.ReactNode;
+  href?: string;
+  onClick?: () => void;
+  "aria-haspopup"?: "dialog";
+}) {
+  if (onClick)
+    return (
+      <button type="button" onClick={onClick} className={linkLook} {...rest}>
+        {children}
+      </button>
+    );
   return (
-    <a
-      href={href}
-      className={cx(
-        "rounded-sm font-medium text-[#1f6f78] underline decoration-2 underline-offset-4 hover:decoration-[#e8a33d]",
-        focusRing,
-      )}
-    >
+    <a href={href} className={linkLook}>
       {children}
     </a>
   );
@@ -117,21 +145,51 @@ const fieldLabel = "font-(family-name:--font-label) text-xs tracking-[0.15em] up
 const fieldBox =
   "w-full rounded-xl border-2 border-[#8a7f6c] bg-(--surface) px-4 py-2.5 text-(--text) placeholder:text-[#857d72] focus:border-[#1f6f78] focus:outline-3 focus:outline-[#1f6f78]/25";
 
-export function TextField({ label, placeholder, defaultValue }: { label: string; placeholder?: string; defaultValue?: string }) {
+type TextFieldProps = {
+  label: string;
+  placeholder?: string;
+  defaultValue?: string;
+  value?: string;
+  onChange?: (value: string) => void;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
+};
+
+export function TextField({ label, placeholder, defaultValue, value, onChange, inputMode }: TextFieldProps) {
   return (
     <label className="flex flex-col gap-1.5">
       <span className={fieldLabel}>{label}</span>
-      <input type="text" placeholder={placeholder} defaultValue={defaultValue} className={fieldBox} />
+      <input
+        type="text"
+        inputMode={inputMode}
+        placeholder={placeholder}
+        defaultValue={value === undefined ? defaultValue : undefined}
+        value={value}
+        onChange={onChange && ((e) => onChange(e.target.value))}
+        className={fieldBox}
+      />
     </label>
   );
 }
 
-export function SelectField({ label, options, defaultValue }: { label: string; options: string[]; defaultValue?: string }) {
+type SelectFieldProps = {
+  label: string;
+  options: string[];
+  defaultValue?: string;
+  value?: string;
+  onChange?: (value: string) => void;
+};
+
+export function SelectField({ label, options, defaultValue, value, onChange }: SelectFieldProps) {
   return (
     <label className="flex flex-col gap-1.5">
       <span className={fieldLabel}>{label}</span>
       <span className="relative">
-        <select defaultValue={defaultValue} className={cx(fieldBox, "appearance-none pr-10")}>
+        <select
+          defaultValue={value === undefined ? defaultValue : undefined}
+          value={value}
+          onChange={onChange && ((e) => onChange(e.target.value))}
+          className={cx(fieldBox, "appearance-none pr-10")}
+        >
           {options.map((o) => (
             <option key={o}>{o}</option>
           ))}
@@ -147,16 +205,36 @@ export function SelectField({ label, options, defaultValue }: { label: string; o
 // ---------------------------------------------------------------------------
 // Checkbox, radio, toggle
 
-export function Checkbox({ label, defaultChecked = false }: { label: string; defaultChecked?: boolean }) {
-  const [checked, setChecked] = useState(defaultChecked);
+type CheckboxProps = {
+  label: string;
+  defaultChecked?: boolean;
+  checked?: boolean;
+  onChange?: (checked: boolean) => void;
+  disabled?: boolean;
+};
+
+export function Checkbox({ label, defaultChecked = false, checked: value, onChange, disabled = false }: CheckboxProps) {
+  const [checked, setChecked] = useControlled(value, onChange, defaultChecked);
   return (
-    <label className="group inline-flex cursor-pointer items-center gap-2.5">
-      <input type="checkbox" checked={checked} onChange={(e) => setChecked(e.target.checked)} className="peer sr-only" />
+    <label className={cx("group inline-flex items-center gap-2.5", disabled ? "cursor-not-allowed text-(--muted)" : "cursor-pointer")}>
+      <input
+        type="checkbox"
+        checked={checked}
+        disabled={disabled}
+        onChange={(e) => setChecked(e.target.checked)}
+        className="peer sr-only"
+      />
       <span
         aria-hidden
         className={cx(
-          "grid size-6 place-items-center rounded-lg border-2 transition-colors peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[#1f6f78]",
-          checked ? "border-[#1f6f78] bg-[#1f6f78]" : "border-[#8a7f6c] bg-(--surface) group-hover:border-(--text)",
+          "grid size-6 shrink-0 place-items-center rounded-lg border-2 transition-colors peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[#1f6f78]",
+          disabled
+            ? checked
+              ? "border-[#5f8f7c] bg-[#5f8f7c]"
+              : "border-[#cfc4b2] bg-[#e6dccb]"
+            : checked
+              ? "border-[#1f6f78] bg-[#1f6f78]"
+              : "border-[#8a7f6c] bg-(--surface) group-hover:border-(--text)",
         )}
       >
         {checked && (
@@ -194,8 +272,10 @@ export function RadioGroup({ name, options, defaultValue }: { name: string; opti
   );
 }
 
-export function Toggle({ label, defaultOn = false }: { label: string; defaultOn?: boolean }) {
-  const [on, setOn] = useState(defaultOn);
+type ToggleProps = { label: string; defaultOn?: boolean; on?: boolean; onChange?: (on: boolean) => void };
+
+export function Toggle({ label, defaultOn = false, on: value, onChange }: ToggleProps) {
+  const [on, setOn] = useControlled(value, onChange, defaultOn);
   return (
     <button
       type="button"
@@ -228,8 +308,10 @@ export function Toggle({ label, defaultOn = false }: { label: string; defaultOn?
 // ---------------------------------------------------------------------------
 // Tabs and chips
 
-export function Tabs({ tabs, defaultTab }: { tabs: string[]; defaultTab?: string }) {
-  const [active, setActive] = useState(defaultTab ?? tabs[0]);
+type TabsProps = { tabs: string[]; defaultTab?: string; value?: string; onChange?: (tab: string) => void };
+
+export function Tabs({ tabs, defaultTab, value, onChange }: TabsProps) {
+  const [active, setActive] = useControlled(value, onChange, defaultTab ?? tabs[0]);
   return (
     <div role="tablist" className="flex gap-6">
       {tabs.map((t) => (
@@ -253,10 +335,12 @@ export function Tabs({ tabs, defaultTab }: { tabs: string[]; defaultTab?: string
   );
 }
 
-export function Chips({ chips, defaultChip }: { chips: string[]; defaultChip?: string }) {
-  const [active, setActive] = useState(defaultChip ?? chips[0]);
+type ChipsProps = { chips: string[]; defaultChip?: string; value?: string; onChange?: (chip: string) => void; label?: string };
+
+export function Chips({ chips, defaultChip, value, onChange, label }: ChipsProps) {
+  const [active, setActive] = useControlled(value, onChange, defaultChip ?? chips[0]);
   return (
-    <div className="flex flex-wrap gap-2">
+    <div role="group" aria-label={label} className="flex flex-wrap gap-2">
       {chips.map((c) => (
         <button
           key={c}
@@ -341,9 +425,19 @@ export function DetailPanel({ title, children, onClose }: { title: string; child
   );
 }
 
-export function ModalDemo({ trigger, title, children }: { trigger: string; title: string; children: React.ReactNode }) {
+// The detail panel as a modal dialog: Escape or a click on the backdrop closes it.
+export function Modal({
+  open,
+  onClose,
+  title,
+  children,
+}: {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  children: React.ReactNode;
+}) {
   const ref = useRef<HTMLDialogElement>(null);
-  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     const d = ref.current;
@@ -353,20 +447,29 @@ export function ModalDemo({ trigger, title, children }: { trigger: string; title
   }, [open]);
 
   return (
+    <dialog
+      ref={ref}
+      onClose={onClose}
+      onClick={(e) => e.target === ref.current && onClose()}
+      className="m-auto w-[min(24rem,calc(100%-2rem))] bg-transparent p-0 text-(--text) backdrop:bg-[#1c2a4a]/50"
+    >
+      <DetailPanel title={title} onClose={onClose}>
+        {children}
+      </DetailPanel>
+    </dialog>
+  );
+}
+
+export function ModalDemo({ trigger, title, children }: { trigger: string; title: string; children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return (
     <>
       <Key variant="secondary" onClick={() => setOpen(true)}>
         {trigger}
       </Key>
-      <dialog
-        ref={ref}
-        onClose={() => setOpen(false)}
-        onClick={(e) => e.target === ref.current && setOpen(false)}
-        className="m-auto bg-transparent p-0 backdrop:bg-[#1c2a4a]/50"
-      >
-        <DetailPanel title={title} onClose={() => setOpen(false)}>
-          {children}
-        </DetailPanel>
-      </dialog>
+      <Modal open={open} onClose={() => setOpen(false)} title={title}>
+        {children}
+      </Modal>
     </>
   );
 }

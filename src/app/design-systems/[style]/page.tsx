@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { GlassDesignSystem } from "@/components/glass/DesignSystem";
 import { OrbitDesignSystem } from "@/components/orbit/DesignSystem";
 import { ZineDesignSystem } from "@/components/zine/DesignSystem";
 import { getStyle, styles, themeVars, type Style } from "@/lib/styles";
@@ -15,6 +16,7 @@ export function generateStaticParams() {
 const systems: Record<string, (props: { style: Style }) => React.ReactNode> = {
   orbit: OrbitDesignSystem,
   zine: ZineDesignSystem,
+  glass: GlassDesignSystem,
 };
 
 // Design system built from the style's mood board. Sections to fill in:

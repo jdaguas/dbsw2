@@ -366,7 +366,8 @@ export function Chips({ chips, defaultChip, value, onChange, label }: ChipsProps
 // Badges
 
 // A Googie starburst holding the streak count.
-export function StreakBadge({ days, size = 64 }: { days: number; size?: number }) {
+// compact: on small screens the "day streak" words are kept for screen readers only.
+export function StreakBadge({ days, size = 64, compact = false }: { days: number; size?: number; compact?: boolean }) {
   const points = Array.from({ length: 16 }, (_, i) => {
     const r = i % 2 ? 30 : 48;
     const a = (Math.PI / 8) * i;
@@ -380,7 +381,12 @@ export function StreakBadge({ days, size = 64 }: { days: number; size?: number }
         </svg>
         <span className="relative font-(family-name:--font-display) text-lg text-[#1c2a4a]">{days}</span>
       </span>
-      <span className="font-(family-name:--font-label) text-xs leading-tight tracking-[0.15em] uppercase">
+      <span
+        className={cx(
+          "font-(family-name:--font-label) text-xs leading-tight tracking-[0.15em] uppercase",
+          compact && "max-sm:sr-only",
+        )}
+      >
         day
         <br />
         streak
@@ -399,6 +405,37 @@ export function GoalBadge({ children = "Goal met" }: { children?: React.ReactNod
 }
 
 // ---------------------------------------------------------------------------
+// Chrome button: a small round hardware knob for icon-only actions (close, open details).
+
+export function ChromeButton({
+  label,
+  onClick,
+  children,
+  ...rest
+}: {
+  label: string;
+  onClick?: () => void;
+  children: React.ReactNode;
+  "aria-haspopup"?: "dialog";
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      onClick={onClick}
+      className={cx(
+        "grid size-9 shrink-0 place-items-center rounded-full bg-[#e9ebec] text-[#1c2a4a] shadow-[inset_0_-3px_0_#9da1a5] transition-[background-color,box-shadow] hover:bg-[#dfe2e4] active:shadow-[inset_0_-1px_0_#9da1a5]",
+        focusRing,
+      )}
+      {...rest}
+    >
+      {children}
+    </button>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Detail panel: inline for the library, or as a real modal dialog.
 
 export function DetailPanel({ title, children, onClose }: { title: string; children: React.ReactNode; onClose?: () => void }) {
@@ -406,19 +443,11 @@ export function DetailPanel({ title, children, onClose }: { title: string; child
     <div className="w-full max-w-sm rounded-[2rem] border-2 border-(--text) bg-(--surface) p-6">
       <div className="flex items-start justify-between gap-4">
         <h3 className="font-(family-name:--font-display) text-xl tracking-wide uppercase">{title}</h3>
-        <button
-          type="button"
-          aria-label="Close"
-          onClick={onClose}
-          className={cx(
-            "grid size-8 place-items-center rounded-full bg-[#e9ebec] shadow-[inset_0_-2px_0_#9da1a5] hover:bg-[#dfe2e4] active:shadow-none",
-            focusRing,
-          )}
-        >
+        <ChromeButton label="Close" onClick={onClose}>
           <svg viewBox="0 0 10 10" className="w-2.5" aria-hidden>
             <path d="M1 1l8 8M9 1l-8 8" stroke={orbit.navy} strokeWidth="2" strokeLinecap="round" />
           </svg>
-        </button>
+        </ChromeButton>
       </div>
       <div className="mt-4">{children}</div>
     </div>

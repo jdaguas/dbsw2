@@ -20,7 +20,20 @@ import {
   type LogRow,
 } from "./habits";
 import { orbit } from "./tokens";
-import { Checkbox, Chips, GoalBadge, Key, Modal, SelectField, StreakBadge, Tabs, TextField, TextLink, Toggle } from "./ui";
+import {
+  Checkbox,
+  Chips,
+  ChromeButton,
+  GoalBadge,
+  Key,
+  Modal,
+  SelectField,
+  StreakBadge,
+  Tabs,
+  TextField,
+  TextLink,
+  Toggle,
+} from "./ui";
 
 function cx(...classes: (string | false | undefined)[]) {
   return classes.filter(Boolean).join(" ");
@@ -162,20 +175,9 @@ export function HabitTracker() {
             <div className="mt-6 grid gap-6 md:grid-cols-2">
               {shown.map((h) => (
                 <HabitCard key={h.id} habit={h} goal={h.id === "mood" ? undefined : goals[h.id]} met={met(h.id)} streak={streaks[h.id]} onDetails={() => setDetail(h.id)}>
-                  {h.id === "water" && <WaterCells goal={goals.water} value={todayLog.water} onChange={(v) => log("water", v)} />}
+                  {h.id === "water" && <WaterCells goal={goals.water} value={todayLog.water} onChange={(v) => log("water", v)} fill />}
                   {h.id === "reading" && (
-                    <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-                      <PageStepper goal={goals.reading} value={todayLog.reading} onChange={(v) => log("reading", v)} />
-                      <div className="max-w-48">
-                        <TextField
-                          label="Or type pages"
-                          inputMode="numeric"
-                          placeholder="0"
-                          value={todayLog.reading ? String(todayLog.reading) : ""}
-                          onChange={(v) => log("reading", Math.min(9999, Number(v.replace(/\D/g, "")) || 0))}
-                        />
-                      </div>
-                    </div>
+                    <PageStepper goal={goals.reading} value={todayLog.reading} onChange={(v) => log("reading", v)} fill />
                   )}
                   {h.id === "exercise" && <ExerciseDial goal={goals.exercise} value={todayLog.exercise} onChange={(v) => log("exercise", v)} />}
                   {h.id === "mood" && (
@@ -314,14 +316,16 @@ function HabitCard({
           </h2>
           <p className={cx(label, "mt-1 text-(--muted)")}>{goal ? `Goal · ${goal} ${unit}` : "Goal · once a day"}</p>
         </div>
-        <StreakBadge days={streak} size={52} />
+        <div className="flex items-center gap-3">
+          <StreakBadge days={streak} size={52} compact />
+          <ChromeButton label={`${habit.name} details and goal`} onClick={onDetails} aria-haspopup="dialog">
+            <svg viewBox="0 0 8 12" className="w-2" aria-hidden>
+              <path d="M1.5 1.5L6 6l-4.5 4.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </ChromeButton>
+        </div>
       </header>
-      <div className="flex-1">{children}</div>
-      <footer className="border-t border-(--border) pt-4">
-        <TextLink onClick={onDetails} aria-haspopup="dialog">
-          Details and goal →
-        </TextLink>
-      </footer>
+      <div className="flex flex-1 flex-col *:flex-1">{children}</div>
     </article>
   );
 }

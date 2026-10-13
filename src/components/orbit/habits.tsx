@@ -97,11 +97,14 @@ export function FuelCell({
   look,
   forced,
   disabled,
+  large = false,
   ...props
 }: {
   look: CellLook;
   forced?: ForcedState;
   disabled?: boolean;
+  // Taller cells from the sm breakpoint up, for the site's water card.
+  large?: boolean;
 } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button
@@ -109,6 +112,7 @@ export function FuelCell({
       disabled={disabled}
       className={cx(
         "relative h-14 w-7 overflow-hidden rounded-full border-2 transition-colors",
+        large && "sm:h-20 sm:w-10",
         disabled ? "cursor-not-allowed border-[#cfc4b2] bg-[#e6dccb]" : "border-[#1c2a4a]",
         !disabled && look === "empty" && (forced === "hover" ? "bg-[#1f6f78]/30" : "bg-(--surface)"),
         !disabled && look === "preview" && "bg-[#1f6f78]/30",
@@ -120,20 +124,32 @@ export function FuelCell({
       )}
       {...props}
     >
-      {look === "full" && !disabled && <span aria-hidden className="absolute top-2 left-1.5 h-6 w-1 rounded-full bg-white/40" />}
+      {look === "full" && !disabled && (
+        <span
+          aria-hidden
+          className={cx("absolute top-2 left-1.5 h-6 w-1 rounded-full bg-white/40", large && "sm:top-3 sm:left-2 sm:h-9 sm:w-1.5")}
+        />
+      )}
     </button>
   );
 }
 
 type Controlled<T> = { value?: T; onChange?: (value: T) => void };
 
-export function WaterCells({ goal = 8, initial = 5, value, onChange }: { goal?: number; initial?: number } & Controlled<number>) {
+// fill: large cells, centered in the space the card gives them, for the site.
+export function WaterCells({
+  goal = 8,
+  initial = 5,
+  value,
+  onChange,
+  fill = false,
+}: { goal?: number; initial?: number; fill?: boolean } & Controlled<number>) {
   const [count, setCount] = useControlled(value, onChange, initial);
   const [hover, setHover] = useState<number | null>(null);
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap gap-2" onMouseLeave={() => setHover(null)}>
+    <div className={cx("flex flex-col gap-3", fill && "h-full items-center justify-center gap-4 py-2")}>
+      <div className={cx("flex flex-wrap gap-2", fill && "justify-center")} onMouseLeave={() => setHover(null)}>
         {Array.from({ length: goal }, (_, i) => {
           const full = i < count;
           const look: CellLook = full ? "full" : hover !== null && i <= hover ? "preview" : "empty";
@@ -141,6 +157,7 @@ export function WaterCells({ goal = 8, initial = 5, value, onChange }: { goal?: 
             <FuelCell
               key={i}
               look={look}
+              large={fill}
               aria-label={full && i === count - 1 ? `Empty glass ${i + 1}` : `Fill to ${i + 1} glasses`}
               onMouseEnter={() => setHover(i)}
               onClick={() => setCount(i + 1 === count ? i : i + 1)}
@@ -161,14 +178,14 @@ export function WaterCells({ goal = 8, initial = 5, value, onChange }: { goal?: 
 // ---------------------------------------------------------------------------
 // Reading: a planet travels around its orbit as the pages add up.
 
-export function OrbitTrack({ value, total, size = 200 }: { value: number; total: number; size?: number }) {
+export function OrbitTrack({ value, total, size = 200, className }: { value: number; total: number; size?: number; className?: string }) {
   const done = value >= total;
   const t = Math.min(value / total, 1);
   const angle = -Math.PI / 2 + t * 2 * Math.PI;
   const x = 100 + 80 * Math.cos(angle);
   const y = 50 + 34 * Math.sin(angle);
   return (
-    <svg viewBox="0 0 200 100" width={size} aria-hidden>
+    <svg viewBox="0 0 200 100" width={className ? undefined : size} className={className} aria-hidden>
       <ellipse cx="100" cy="50" rx="80" ry="34" fill="none" stroke="#ddd0b8" strokeWidth="3" />
       {/* The same ellipse drawn from the top, clockwise, so progress starts where the planet does. */}
       <path
@@ -186,12 +203,19 @@ export function OrbitTrack({ value, total, size = 200 }: { value: number; total:
   );
 }
 
-export function PageStepper({ goal = 20, initial = 12, value, onChange }: { goal?: number; initial?: number } & Controlled<number>) {
+// fill: the orbit grows to the card's width, for the site.
+export function PageStepper({
+  goal = 20,
+  initial = 12,
+  value,
+  onChange,
+  fill = false,
+}: { goal?: number; initial?: number; fill?: boolean } & Controlled<number>) {
   const [pages, setPages] = useControlled(value, onChange, initial);
   const add = (n: number) => setPages(Math.max(0, pages + n));
   return (
     <div className="flex flex-col items-start gap-3">
-      <OrbitTrack value={pages} total={goal} />
+      <OrbitTrack value={pages} total={goal} className={fill ? "h-auto w-full max-w-[22rem]" : undefined} />
       <div className="flex items-center gap-3">
         <ConsoleScreen className="!rounded-2xl !p-1.5">
           <span className="block min-w-24 text-center text-lg" aria-live="polite">
@@ -260,21 +284,26 @@ export function ExerciseDial({ goal = 30, initial = 25, value, onChange }: { goa
           pathLength="100"
           strokeDasharray={`${t * 100} 100`}
         />
+        {/* Ticks just inside the arc, numbers inside the ticks, and a needle short
+            enough to stop before the numbers. The arc's round caps mark 0 and the goal. */}
         {ticks.map((m) => {
           const a = Math.PI - (m / goal) * Math.PI;
+          const end = m === 0 || m === goal;
           return (
             <g key={m}>
-              <line
-                x1={100 + 62 * Math.cos(a)}
-                y1={100 - 62 * Math.sin(a)}
-                x2={100 + 68 * Math.cos(a)}
-                y2={100 - 68 * Math.sin(a)}
-                stroke={orbit.navy}
-                strokeWidth="2"
-              />
+              {!end && (
+                <line
+                  x1={100 + 62 * Math.cos(a)}
+                  y1={100 - 62 * Math.sin(a)}
+                  x2={100 + 68 * Math.cos(a)}
+                  y2={100 - 68 * Math.sin(a)}
+                  stroke={orbit.navy}
+                  strokeWidth="2"
+                />
+              )}
               <text
-                x={100 + 50 * Math.cos(a)}
-                y={104 - 50 * Math.sin(a)}
+                x={100 + (end ? 80 : 52) * Math.cos(a)}
+                y={end ? 117 : 103 - 52 * Math.sin(a)}
                 textAnchor="middle"
                 fontSize="9"
                 fill={orbit.navy}
@@ -286,7 +315,7 @@ export function ExerciseDial({ goal = 30, initial = 25, value, onChange }: { goa
           );
         })}
         <g style={{ transform: `rotate(${needle}deg)`, transformOrigin: "100px 100px", transition: "transform 300ms" }}>
-          <line x1="100" y1="100" x2="100" y2="40" stroke={orbit.navy} strokeWidth="3" strokeLinecap="round" />
+          <line x1="100" y1="100" x2="100" y2="62" stroke={orbit.navy} strokeWidth="3" strokeLinecap="round" />
         </g>
         <circle cx="100" cy="100" r="7" fill={orbit.navy} />
         <circle cx="100" cy="100" r="2.5" fill={orbit.mustard} />

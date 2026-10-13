@@ -135,6 +135,8 @@ export function FuelCell({
 }
 
 type Controlled<T> = { value?: T; onChange?: (value: T) => void };
+// badge: show the "Goal met" pill under the widget. The site turns it off; its cards say so in the header.
+type Widget = { goal?: number; initial?: number; badge?: boolean };
 
 // fill: large cells, centered in the space the card gives them, for the site.
 export function WaterCells({
@@ -143,7 +145,8 @@ export function WaterCells({
   value,
   onChange,
   fill = false,
-}: { goal?: number; initial?: number; fill?: boolean } & Controlled<number>) {
+  badge = true,
+}: Widget & { fill?: boolean } & Controlled<number>) {
   const [count, setCount] = useControlled(value, onChange, initial);
   const [hover, setHover] = useState<number | null>(null);
 
@@ -169,7 +172,7 @@ export function WaterCells({
         <span className={label} aria-live="polite">
           {count} of {goal} glasses
         </span>
-        {count >= goal && <GoalBadge />}
+        {badge && count >= goal && <GoalBadge />}
       </div>
     </div>
   );
@@ -210,7 +213,8 @@ export function PageStepper({
   value,
   onChange,
   fill = false,
-}: { goal?: number; initial?: number; fill?: boolean } & Controlled<number>) {
+  badge = true,
+}: Widget & { fill?: boolean } & Controlled<number>) {
   const [pages, setPages] = useControlled(value, onChange, initial);
   const add = (n: number) => setPages(Math.max(0, pages + n));
   return (
@@ -222,7 +226,7 @@ export function PageStepper({
             {pages}/{goal} pp
           </span>
         </ConsoleScreen>
-        {pages >= goal && <GoalBadge />}
+        {badge && pages >= goal && <GoalBadge />}
       </div>
       <div className="flex gap-2">
         <Key variant="secondary" lamp={false} aria-label="One page fewer" onClick={() => add(-1)}>
@@ -242,7 +246,7 @@ export function PageStepper({
 // ---------------------------------------------------------------------------
 // Exercise: a gauge with a needle, 0 to the goal in minutes, and a timer.
 
-export function ExerciseDial({ goal = 30, initial = 25, value, onChange }: { goal?: number; initial?: number } & Controlled<number>) {
+export function ExerciseDial({ goal = 30, initial = 25, value, onChange, badge = true }: Widget & Controlled<number>) {
   const [minutes, setMinutes] = useControlled(value, onChange, initial);
   const [running, setRunning] = useState(false);
   // Seconds into this timer session. Each full minute is added to the total as it passes.
@@ -331,7 +335,7 @@ export function ExerciseDial({ goal = 30, initial = 25, value, onChange }: { goa
             </span>
           </ConsoleScreen>
         )}
-        {total >= goal && <GoalBadge />}
+        {badge && total >= goal && <GoalBadge />}
       </div>
       <div className="flex gap-2">
         <Key variant="secondary" lamp={false} onClick={() => setMinutes(minutes + 5)}>

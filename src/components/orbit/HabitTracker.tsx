@@ -175,11 +175,11 @@ export function HabitTracker() {
             <div className="mt-6 grid gap-6 md:grid-cols-2">
               {shown.map((h) => (
                 <HabitCard key={h.id} habit={h} goal={h.id === "mood" ? undefined : goals[h.id]} met={met(h.id)} streak={streaks[h.id]} onDetails={() => setDetail(h.id)}>
-                  {h.id === "water" && <WaterCells goal={goals.water} value={todayLog.water} onChange={(v) => log("water", v)} fill />}
+                  {h.id === "water" && <WaterCells goal={goals.water} value={todayLog.water} onChange={(v) => log("water", v)} fill badge={false} />}
                   {h.id === "reading" && (
-                    <PageStepper goal={goals.reading} value={todayLog.reading} onChange={(v) => log("reading", v)} fill />
+                    <PageStepper goal={goals.reading} value={todayLog.reading} onChange={(v) => log("reading", v)} fill badge={false} />
                   )}
-                  {h.id === "exercise" && <ExerciseDial goal={goals.exercise} value={todayLog.exercise} onChange={(v) => log("exercise", v)} />}
+                  {h.id === "exercise" && <ExerciseDial goal={goals.exercise} value={todayLog.exercise} onChange={(v) => log("exercise", v)} badge={false} />}
                   {h.id === "mood" && (
                     <div className="flex flex-col gap-5">
                       <MoodPhases value={todayLog.mood} onChange={(v) => log("mood", v)} />
